@@ -1,0 +1,64 @@
+PY620C class 6 -t tests.ppt
+
+
+t-tests: History
+- The Student's t-test was developed to compare the distribution of two independent groups on a continuous measure. 
+- For example, a group of professors and a group of students comparing beer on a measure of "drinkability".
+- William Gossett, a statistician working for Guinness brewery developed the test to compare smaller samples. He published under the pseudonym "student" because Guinness employees were forbidden to publish. 
+
+Why t? Why not s (for stout)?
+- Why "t"? -Nobody really knows. Maybe Gossett developed the test  during his afternoon tea (t) breaks?
+=
+
+T-test: How does it work?
+- The t-test is a signal-to-noise ratio. The "signal" is the difference between two means. The "noise" is variability in scores around the two means. 
+- The t-test is the ratio of the difference between the means over the standard error of that difference. Unlike the z-test, there is a different t value for each sample size (and significance level). When samples get large, t approaches z.
+
+T-test how does it work (cont)
+- Remember that each sample is representative of a population. The t-test allows us to test whether there is likely to be a sufficient difference between population means to state that the two populations are different.
+
+The t test as a Signal-to-Noise Ratio
+
+The Independent t Test
+- Used to compare the means of two independent or unrelated groups
+- Formula:
+Where:
+
+Degrees of Freedom (df )
+- The number of observations minus the number of restrictions limiting the observations’ freedom to vary
+- For the independent t-test, df = N – 2
+- If you calculate the deviations from the mean they should sum to zero. If you know all but one of the scores, the last score is no longer free to vary but is known in order to allow the deviations to sum to zero. Thus with 5 scores you have 4 degrees of freedom.
+
+t values required for significance at various p levels
+Rosnow, Beginning Behavioral Research, 5/e. Copyright 2005 by Prentice Hall
+
+T-test example data
+
+Calculating the Effect Size for t
+Because the IV has only two groups, this effect size is the equivalent to the point biserial correlation
+
+T-test: Settings and sub-species
+- Where observed: Any time two means are compared.
+- T-tests  need normally distributed environments in order to thrive. They do not fare well when the measures are badly skewed or groups are very different in size AND variance.
+- When the two groups being compared are NOT independent (e.g. two measurements from the same person), a matched pairs t-test is used instead.
+
+Maximizing the t Test: Options
+- Drive the means further apart
+- e.g., Use a stronger treatment
+- Decrease the variability within groups
+- e.g., Standardize the research procedures 
+- e.g., Use a more homogeneous sample
+- Increase the effective size of study
+
+Maximizing the t test: Conceptualizing the t Test
+
+Assumptions of the t Test
+- Homogeneity of Variance: The population variance of the two groups is assumed to be equal.
+- Serious violations can to result in a misleading p value and effect size r.
+
+Paired t-test
+- Used to compare means of two groups that are related to each other in some way
+- Formula:
+Where  MD = Mean of the difference in related measures and SD is the variance of the difference in those measures.
+
+Other Effect Size Indices

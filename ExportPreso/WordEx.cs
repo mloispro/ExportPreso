@@ -43,16 +43,20 @@ namespace ExportPreso
 
             _doc = DocX.Create(filePath);
             _doc.ApplyTemplate(@"C:\Projects\ExportPreso\ExportPreso\WordTemplate\_template.dotx");
-            //_doc.MarginBottom = .5F;
-            //_doc.MarginLeft = .5F;
-            //_doc.MarginRight = .5F;
-            //_doc.MarginTop = .5F;
+
         }
-        public static void AddText(string text)
+        public static void AddText(string text, bool isNote = false)
         {
+            if (isNote && IsNumeric(text))
+                return;
+
             var para = _doc.InsertParagraph(CleanInvalidXmlChars(text));//, false, _textFormat);
             //var para = _doc.InsertParagraph(text);
             para.StyleName = "Normal";
+            if (isNote)
+            {
+                para.StyleName = "ProfNote";
+            }
         }
         public static void AddHeader(string text)
         {
@@ -66,19 +70,25 @@ namespace ExportPreso
             var para = _doc.InsertParagraph(CleanInvalidXmlChars(text));//, false, _headerFormat);
             para.StyleName = "Heading1";
         }
-        public static void AddBulletList(List<string> bullets)
+        public static void AddBulletList(List<string> bullets, bool isNote = false)
         {
             var list = _doc.AddList(listType: ListItemType.Bulleted);
-            
+
             foreach (var bullet in bullets)
             {
-                
-               var li = _doc.AddListItem(list, CleanInvalidXmlChars(bullet));
-                
+                if (isNote && IsNumeric(bullet))
+                    continue;
+
+                var li = _doc.AddListItem(list, CleanInvalidXmlChars(bullet));
+
             }
             foreach (var item in list.Items)
             {
                 item.StyleName = "ListParagraph";
+                if (isNote)
+                {
+                    item.StyleName = "ProfNoteBullet";
+                }
             }
 
             //_doc.InsertList(list, _calibri, 10D);
@@ -100,7 +110,8 @@ namespace ExportPreso
             {
                 _doc.Save();
                 Process.Start("WINWORD.EXE", "\"" + _filePath + "\"");
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
@@ -109,6 +120,18 @@ namespace ExportPreso
         {
             string re = @"[^\x09\x0A\x0D\x20-\xD7FF\xE000-\xFFFD\x10000-x10FFFF]";
             return Regex.Replace(text, re, "");
+        }
+        public static bool IsNumeric(string text)
+        {
+            int result;
+            if (int.TryParse(text, out result))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 }

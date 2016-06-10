@@ -31,7 +31,7 @@ namespace ExportPreso
         List<SlideInfo> _slideInfos = new List<SlideInfo>();
         private void btnExport_Click(object sender, EventArgs e)
         {
-            
+
 
             lblMessage.Enabled = false;
             var result = this.folderBrowser.ShowDialog(this);
@@ -41,7 +41,7 @@ namespace ExportPreso
             //string folderPath = @"C:\Projects\ExportPreso\Test Presos\FolderTest";
             //string filePath = folderPath + @"\1_PY620C class 6 -t tests.ppt";
 
-            var ext = new List<string> { ".ppt", ".pptx"};
+            var ext = new List<string> { ".ppt", ".pptx" };
             var presos = Directory.GetFiles(folderPath, "*.*", SearchOption.TopDirectoryOnly)
                  .Where(s => ext.Any(x => s.EndsWith(x)));
 
@@ -59,7 +59,8 @@ namespace ExportPreso
             try
             {
                 PowerPoint_App = new Microsoft.Office.Interop.PowerPoint.Application();
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 MessageBox.Show("Error initializing, close Powerpoint if it is open");
                 return;
@@ -68,7 +69,7 @@ namespace ExportPreso
 
             //StringBuilder buffer = new StringBuilder();
             string outFile = "";
-            
+
             foreach (var preso in presos)
             {
                 Microsoft.Office.Interop.PowerPoint.Presentation presentation = multi_presentations.Open(preso, MsoTriState.msoFalse, MsoTriState.msoFalse, MsoTriState.msoFalse);
@@ -88,9 +89,6 @@ namespace ExportPreso
                 }
 
                 WordEx.AddTitle(newPptName);
-                //WordEx.AddBlankLine();
-                //buffer.AppendLine(newPptName);
-                //buffer.AppendLine();
 
                 foreach (Microsoft.Office.Interop.PowerPoint.Slide slide in presentation.Slides)
                 {
@@ -101,7 +99,7 @@ namespace ExportPreso
 
                     //ParseWithOpenXML(slideId,preso);
                     _slideInfos.Add(new SlideInfo() { Id = slideId, path = preso });
-
+                    var prevNoteText = "";
                     foreach (var item in slide.Shapes)
                     {
                         //firstLine = true;
@@ -109,7 +107,7 @@ namespace ExportPreso
 
                         if (shape.HasTextFrame == MsoTriState.msoTrue)
                         {
-                            
+
                             if (shape.TextFrame2.HasText == MsoTriState.msoTrue)
                             {
                                 if (shape.TextFrame2.TextRange.ParagraphFormat.Bullet.Type != MsoBulletType.msoBulletNone)
@@ -124,10 +122,26 @@ namespace ExportPreso
                                     WordEx.AddBulletList(bullets);
                                     //string text = shape.TextFrame2.TextRange.Text;
                                     //WordEx.AddBulletList(text);
-                                    continue;
+
                                 }
+                                else
+                                {
+                                    var text = shape.TextFrame2.TextRange.Text;
+                                    //slideText += text + " ";
+                                    //buffer.AppendLine(text);
+                                    if (firstLine)
+                                    {
+                                        WordEx.AddHeader(text);
+                                        firstLine = false;
+                                    }
+                                    else
+                                    {
+                                        WordEx.AddText(text);
+                                    }
+                                }
+
                             }
-                            if (shape.TextFrame.HasText == MsoTriState.msoTrue)
+                            else if (shape.TextFrame.HasText == MsoTriState.msoTrue)
                             {
                                 var text = shape.TextFrame.TextRange.Text;
                                 //slideText += text + " ";
@@ -138,25 +152,77 @@ namespace ExportPreso
                                     firstLine = false;
                                 }
                                 else
+                                {
                                     WordEx.AddText(text);
+                                }
+                            }
+
+                            firstLine = false;
+                        }
+                        
+                        if (slide.HasNotesPage == MsoTriState.msoTrue)
+                        {
+                            //bool processedNotes = false;
+                            
+                            foreach (var note in slide.NotesPage.Shapes)
+                            {
+                                //if (processedNotes)
+                                //    break;
+
+                                var noteShape = (Microsoft.Office.Interop.PowerPoint.Shape)note;
+
+                                if (noteShape.HasTextFrame == MsoTriState.msoTrue)
+                                {
+
+                                    if (noteShape.TextFrame2.HasText == MsoTriState.msoTrue)
+                                    {
+                                        var text1 = noteShape.TextFrame2.TextRange.Text;
+                                        if (text1 == prevNoteText||WordEx.IsNumeric(text1))
+                                            continue;
+
+                                        //processedNotes = true; //go to next since notes are duplicated in interop.
+                                        if (noteShape.TextFrame2.TextRange.ParagraphFormat.Bullet.Type != MsoBulletType.msoBulletNone)
+                                        {
+                                            
+                                            List<string> bullets = new List<string>();
+                                            foreach (TextRange2 para in noteShape.TextFrame2.TextRange.Paragraphs)
+                                            {
+                                                bullets.Add(para.Text);
+                                            }
+                                            WordEx.AddBulletList(bullets, true);
+                                            prevNoteText = noteShape.TextFrame2.TextRange.Text;
+                                        }
+                                        else
+                                        {
+                                            var text = noteShape.TextFrame2.TextRange.Text;
+
+                                            WordEx.AddText(text, true);
+                                            
+
+                                        }
+
+                                    }
+                                    else if (noteShape.TextFrame.HasText == MsoTriState.msoTrue)
+                                    {
+                                        var text = noteShape.TextFrame.TextRange.Text;
+
+                                        WordEx.AddText(text, true);
+                                       
+
+                                    }
+                                }
+
                             }
                         }
-                        firstLine = false;
                     }
+
                 }
                 var presoSource = Path.GetFileName(preso);
                 string processedPreso = Path.Combine(processedDir.FullName, presoSource);
                 if (!File.Exists(processedPreso))
                     File.Copy(preso, processedPreso);
+
             }
-            //string outputText = buffer.ToString();
-            //var outDir = Directory.CreateDirectory(folderPath + @"\_output");
-            //var fullFilePath = Path.Combine(outDir.FullName, outFile);
-            //using (var fi = File.CreateText(fullFilePath))
-            //{
-            //    fi.Write(outputText);
-            //}
-            
             try
             {
                 PowerPoint_App.Quit();
@@ -172,7 +238,7 @@ namespace ExportPreso
                 //ParseWithOpenXML(); //maybe later to get images
 
                 WordEx.Save();
-               
+
                 lblMessage.Text = "Created Doc: " + _fullFilePath;
                 lblMessage.Enabled = true;
             }
@@ -180,16 +246,6 @@ namespace ExportPreso
             {
                 MessageBox.Show(ex.Message);
             }
-            
-            //lblMessage.lin
-            //using (StreamWriter fs = new StreamWriter(fullFilePath, FileMode.OpenOrCreate))
-            //{
-            //    fs.Write(s)
-            //}
-            //using (var stream = File.Create(fullFilePath))
-            //{
-            //    using(FileStream fs = new FileStream(stream))
-            //}
         }
 
         private void ParseWithOpenXML()
@@ -198,8 +254,9 @@ namespace ExportPreso
             var id = _slideInfos[0].Id;
 
             PresentationDocument ppt = null;
-          
-            try {
+
+            try
+            {
                 ppt = PresentationDocument.Open(preso, true);
             }
             catch (Exception ex)
@@ -253,10 +310,10 @@ namespace ExportPreso
 
             //var img = Image.FromStream(stream);
         }
-            ///////////
+        ///////////
 
-            
-        
+
+
 
         private void lblMessage_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {

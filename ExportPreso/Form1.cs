@@ -25,7 +25,7 @@ namespace ExportPreso
             InitializeComponent();
             lblMessage.Enabled = false;
         }
-        
+
         List<SlideInfo> _slideInfos = new List<SlideInfo>();
         private void btnExport_Click(object sender, EventArgs e)
         {
@@ -39,32 +39,41 @@ namespace ExportPreso
             var presos = Directory.GetFiles(folderPath, "*.*", SearchOption.TopDirectoryOnly)
                  .Where(s => ext.Any(x => s.EndsWith(x))).ToList();
 
-            if (presos.Count() == 0)
+            var pdfext = new List<string> { ".pdf" };
+            var pdfs = Directory.GetFiles(folderPath, "*.*", SearchOption.TopDirectoryOnly)
+                 .Where(s => pdfext.Any(x => s.EndsWith(x))).ToList();
+
+            if (presos.Count() == 0 && pdfs.Count() == 0)
             {
-                lblMessage.Text = "no presentations found";
+                lblMessage.Text = "no presentations or Pdfs found";
                 return;
             }
 
             var tempDir = Directory.CreateDirectory(folderPath + @"\_temp");
-            Microsoft.Office.Interop.PowerPoint.Application PowerPoint_App;
-            try
+
+            Microsoft.Office.Interop.PowerPoint.Application PowerPoint_App = null;
+            if (presos.Count() != 0)
             {
-                PowerPoint_App = PowerPointEx.ConvertToPPTX(presos, tempDir.FullName);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error initializing, close Powerpoint if it is open");
-                return;
+
+                try
+                {
+                    PowerPoint_App = PowerPointEx.ConvertToPPTX(presos, tempDir.FullName);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error initializing, close Powerpoint if it is open");
+                    return;
+                }
             }
 
             Microsoft.Office.Interop.PowerPoint.Presentations multi_presentations = PowerPoint_App.Presentations;
 
             string outFile = "";
 
-        
+
             foreach (var preso in presos)
             {
-            
+
                 Microsoft.Office.Interop.PowerPoint.Presentation presentation = multi_presentations.Open(preso, MsoTriState.msoFalse, MsoTriState.msoFalse, MsoTriState.msoFalse);
 
                 var pptName = Path.GetFileName(preso);
@@ -83,10 +92,10 @@ namespace ExportPreso
 
                 WordEx.AddTitle(newPptName);
 
-      
+
                 foreach (Microsoft.Office.Interop.PowerPoint.Slide slide in presentation.Slides)
                 {
-                
+
                     bool firstLine = true;
 
                     //ParseWithOpenXML(slideId,preso);
@@ -102,7 +111,7 @@ namespace ExportPreso
 
                         if (shape.HasTextFrame == MsoTriState.msoTrue)
                         {
-                            
+
                             if (shape.TextFrame2.HasText == MsoTriState.msoTrue)
                             {
                                 if (shape.TextFrame2.TextRange.ParagraphFormat.Bullet.Type != MsoBulletType.msoBulletNone)
@@ -151,14 +160,14 @@ namespace ExportPreso
                                     WordEx.AddText(text);
                                 }
                             }
-                            
+
                             firstLine = false;
                         }
-                        
+
                         if (slide.HasNotesPage == MsoTriState.msoTrue)
                         {
                             //bool processedNotes = false;
-                            
+
                             foreach (var note in slide.NotesPage.Shapes)
                             {
                                 //if (processedNotes)
@@ -172,13 +181,13 @@ namespace ExportPreso
                                     if (noteShape.TextFrame2.HasText == MsoTriState.msoTrue)
                                     {
                                         var text1 = noteShape.TextFrame2.TextRange.Text;
-                                        if (text1 == prevNoteText||WordEx.IsNumeric(text1))
+                                        if (text1 == prevNoteText || WordEx.IsNumeric(text1))
                                             continue;
 
                                         //processedNotes = true; //go to next since notes are duplicated in interop.
                                         if (noteShape.TextFrame2.TextRange.ParagraphFormat.Bullet.Type != MsoBulletType.msoBulletNone)
                                         {
-                                            
+
                                             List<string> bullets = new List<string>();
                                             foreach (TextRange2 para in noteShape.TextFrame2.TextRange.Paragraphs)
                                             {
@@ -192,7 +201,7 @@ namespace ExportPreso
                                             var text = noteShape.TextFrame2.TextRange.Text;
 
                                             WordEx.AddText(text, true);
-                                            
+
 
                                         }
 
@@ -202,7 +211,7 @@ namespace ExportPreso
                                         var text = noteShape.TextFrame.TextRange.Text;
 
                                         WordEx.AddText(text, true);
-                                       
+
 
                                     }
                                 }
@@ -222,8 +231,10 @@ namespace ExportPreso
             try
             {
                 PowerPointEx.Close(PowerPoint_App);
-                AddImages(); //maybe later to get images
-                
+                AddImages();
+
+                AddPdfs(pdfs);
+
                 WordEx.Save();
 
                 lblMessage.Text = "Created Doc: " + _fullFilePath;
@@ -232,6 +243,14 @@ namespace ExportPreso
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
+            }
+        }
+
+        private void AddPdfs(List<string> pdfs)
+        {
+            foreach(var pdf in pdfs)
+            {
+                PdfEx.ConvertToDoc(pdf);
             }
         }
 
@@ -261,10 +280,10 @@ namespace ExportPreso
                 }
                 PresentationPart presentation = ppt.PresentationPart;
 
-                
+
                 foreach (var slide in presentation.SlideParts)
                 {
-                   
+
                     foreach (ImagePart image in slide.ImageParts)
                     {
                         string header = slide.Slide.InnerText;
@@ -280,15 +299,15 @@ namespace ExportPreso
                         {
                             var img = Image.FromStream(stream);
                             WordEx.AddImage(img, header, pptHeader);
-                        
+
                         }
 
                     }
 
                 }
-               
+
             }
-            
+
         }
 
 

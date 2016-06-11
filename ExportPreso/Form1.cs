@@ -7,9 +7,11 @@ using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -23,27 +25,19 @@ namespace ExportPreso
             InitializeComponent();
             lblMessage.Enabled = false;
         }
-        public struct SlideInfo
-        {
-            public int Id;
-            public string path;
-        }
+        
         List<SlideInfo> _slideInfos = new List<SlideInfo>();
         private void btnExport_Click(object sender, EventArgs e)
         {
-
 
             lblMessage.Enabled = false;
             var result = this.folderBrowser.ShowDialog(this);
             if (result != DialogResult.OK) return;
             var folderPath = FileIO.GetPath(folderBrowser.SelectedPath);
 
-            //string folderPath = @"C:\Projects\ExportPreso\Test Presos\FolderTest";
-            //string filePath = folderPath + @"\1_PY620C class 6 -t tests.ppt";
-
             var ext = new List<string> { ".ppt", ".pptx" };
             var presos = Directory.GetFiles(folderPath, "*.*", SearchOption.TopDirectoryOnly)
-                 .Where(s => ext.Any(x => s.EndsWith(x)));
+                 .Where(s => ext.Any(x => s.EndsWith(x))).ToList();
 
             if (presos.Count() == 0)
             {
@@ -51,27 +45,26 @@ namespace ExportPreso
                 return;
             }
 
-            var processedDir = Directory.CreateDirectory(folderPath + @"\_processed");
-            //PowerPointEx pp = new PowerPointEx();
-            //bool ppReady = pp.EnsurePowerPoint();
-
+            var tempDir = Directory.CreateDirectory(folderPath + @"\_temp");
             Microsoft.Office.Interop.PowerPoint.Application PowerPoint_App;
             try
             {
-                PowerPoint_App = new Microsoft.Office.Interop.PowerPoint.Application();
+                PowerPoint_App = PowerPointEx.ConvertToPPTX(presos, tempDir.FullName);
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error initializing, close Powerpoint if it is open");
                 return;
             }
+
             Microsoft.Office.Interop.PowerPoint.Presentations multi_presentations = PowerPoint_App.Presentations;
 
-            //StringBuilder buffer = new StringBuilder();
             string outFile = "";
 
+        
             foreach (var preso in presos)
             {
+            
                 Microsoft.Office.Interop.PowerPoint.Presentation presentation = multi_presentations.Open(preso, MsoTriState.msoFalse, MsoTriState.msoFalse, MsoTriState.msoFalse);
 
                 var pptName = Path.GetFileName(preso);
@@ -90,15 +83,17 @@ namespace ExportPreso
 
                 WordEx.AddTitle(newPptName);
 
+      
                 foreach (Microsoft.Office.Interop.PowerPoint.Slide slide in presentation.Slides)
                 {
-                    int slideId = slide.SlideID;
-                    //buffer.AppendLine();
-                    //WordEx.AddBlankLine();
+                
                     bool firstLine = true;
 
                     //ParseWithOpenXML(slideId,preso);
-                    _slideInfos.Add(new SlideInfo() { Id = slideId, path = preso });
+                    string pptx = Path.GetFileNameWithoutExtension(preso) + ".pptx";
+                    string pptxFile = Path.Combine(tempDir.FullName, pptx);
+                    _slideInfos.Add(new SlideInfo() { Id = slide.SlideNumber, path = pptxFile });
+
                     var prevNoteText = "";
                     foreach (var item in slide.Shapes)
                     {
@@ -107,7 +102,7 @@ namespace ExportPreso
 
                         if (shape.HasTextFrame == MsoTriState.msoTrue)
                         {
-
+                            
                             if (shape.TextFrame2.HasText == MsoTriState.msoTrue)
                             {
                                 if (shape.TextFrame2.TextRange.ParagraphFormat.Bullet.Type != MsoBulletType.msoBulletNone)
@@ -156,7 +151,7 @@ namespace ExportPreso
                                     WordEx.AddText(text);
                                 }
                             }
-
+                            
                             firstLine = false;
                         }
                         
@@ -217,26 +212,18 @@ namespace ExportPreso
                     }
 
                 }
-                var presoSource = Path.GetFileName(preso);
-                string processedPreso = Path.Combine(processedDir.FullName, presoSource);
-                if (!File.Exists(processedPreso))
-                    File.Copy(preso, processedPreso);
+                presentation.Close();
+                //var presoSource = Path.GetFileName(preso);
+                //string processedPreso = Path.Combine(processedDir.FullName, presoSource);
+                //if (!File.Exists(processedPreso))
+                //    File.Copy(preso, processedPreso);
 
             }
             try
             {
-                PowerPoint_App.Quit();
-                System.Runtime.InteropServices.Marshal.ReleaseComObject(PowerPoint_App);
-                Process[] pros = Process.GetProcesses();
-                for (int i = 0; i < pros.Count(); i++)
-                {
-                    if (pros[i].ProcessName.ToLower().Contains("powerpnt"))
-                    {
-                        pros[i].Kill();
-                    }
-                }
-                //ParseWithOpenXML(); //maybe later to get images
-
+                PowerPointEx.Close(PowerPoint_App);
+                AddImages(); //maybe later to get images
+                
                 WordEx.Save();
 
                 lblMessage.Text = "Created Doc: " + _fullFilePath;
@@ -248,71 +235,61 @@ namespace ExportPreso
             }
         }
 
-        private void ParseWithOpenXML()
+        private void AddImages()
         {
-            var preso = _slideInfos[0].path;
-            var id = _slideInfos[0].Id;
-
-            PresentationDocument ppt = null;
-
-            try
-            {
-                ppt = PresentationDocument.Open(preso, true);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Powerpoint file needs to be a pptx to extract images.");
+            if (_slideInfos.Count() == 0)
                 return;
-            }
-            PresentationPart presentation = ppt.PresentationPart;
-            // get the SlideIdList
-            var items = presentation.Presentation.SlideIdList;
 
-            // enumerate over that list
-            foreach (SlideId item in items)
+            var presoFiles = _slideInfos.Select(x => x.path).Distinct();
+
+            foreach (string pptxFile in presoFiles)
             {
-                // get the "Part" by its "RelationshipId"
-                var part = presentation.GetPartById(item.RelationshipId);
+                var pptHeader = Path.GetFileNameWithoutExtension(pptxFile);
+                var underscoreIndex = pptHeader.IndexOf('_');
+                pptHeader = pptHeader.Remove(0, underscoreIndex + 1);
 
-                // this part is really a "SlidePart" and from there, we can get at the actual "Slide"
-                var slide = (part as SlidePart).Slide;
-                string xmlSlideId = presentation.GetIdOfPart(slide.SlidePart);
-                // do more stuff with your slides here!
-                //slide.rel
+                PresentationDocument ppt = null;
+
+                try
+                {
+                    ppt = PresentationDocument.Open(pptxFile, true);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Powerpoint file needs to be a pptx to extract images.");
+                    return;
+                }
+                PresentationPart presentation = ppt.PresentationPart;
+
+                
+                foreach (var slide in presentation.SlideParts)
+                {
+                   
+                    foreach (ImagePart image in slide.ImageParts)
+                    {
+                        string header = slide.Slide.InnerText;
+                        if (!string.IsNullOrWhiteSpace(header))
+                            header = slide.Slide.Descendants<TextBody>().First().InnerText;
+
+                        if (string.IsNullOrWhiteSpace(header))
+                        {
+                            header = pptHeader;
+                        }
+
+                        using (var stream = image.GetStream(FileMode.Open, FileAccess.Read))
+                        {
+                            var img = Image.FromStream(stream);
+                            WordEx.AddImage(img, header, pptHeader);
+                        
+                        }
+
+                    }
+
+                }
+               
             }
-
-            foreach (var slide in presentation.SlideParts)
-            {
-
-                foreach (var part in slide.Parts)
-                {
-                    var pt = part.RelationshipId;
-                    //if(part.part)
-                }
-                foreach (var part in slide.SlideParts)
-                {
-                    var pt = part.SlideCommentsPart;
-                    //if(part.part)
-                }
-                foreach (ImagePart image in slide.ImageParts)
-                {
-                    // var Image = ImagePartType;
-                    var stream = image.GetStream();
-                }
-
-
-            }
-            //var slide = presentation.GetPartsOfType<SlidePart>().FirstOrDefault();
-
-            //var imagePart = slide.GetPartsOfType<ImagePart>().FirstOrDefault();
-
-            //var stream = imagePart.GetStream();
-
-            //var img = Image.FromStream(stream);
+            
         }
-        ///////////
-
-
 
 
         private void lblMessage_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)

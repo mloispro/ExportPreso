@@ -2,6 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -94,15 +97,98 @@ namespace ExportPreso
             //_doc.InsertList(list, _calibri, 10D);
             _doc.InsertList(list);
         }
-        public static void AddImage(string text)
+        public static void AddImage(System.Drawing.Image theImage, string headingText, string pptHeader)
         {
-            var image = _doc.AddImage(text);
-            //para.StyleName = "ListParagraph";
+            string cleanedHeaderText = CleanInvalidXmlChars(headingText).Replace(" ", "");
+            Paragraph para = _doc.Paragraphs.FirstOrDefault(x => CleanInvalidXmlChars(x.Text).Replace(" ","").Contains(cleanedHeaderText));
+            //Paragraph para = _doc.Paragraphs.FirstOrDefault(x => x.Text.Contains(headingText));
+            if (para == null || string.IsNullOrWhiteSpace(para.Text))
+            {
+                cleanedHeaderText = CleanInvalidXmlChars(pptHeader).Replace(" ", "");
+                para = _doc.Paragraphs.FirstOrDefault(x => CleanInvalidXmlChars(x.Text).Replace(" ", "").Contains(pptHeader));
+
+                if (para == null || string.IsNullOrWhiteSpace(para.Text))
+                    return;
+            }
+                
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+
+                try
+                {
+                        theImage.Save(ms, ImageFormat.Png);//theImage.Save(ms, theImage.RawFormat);  // Save your picture in a memory stream.
+                }
+                catch
+                {
+                    try
+                    {
+                        theImage.Save(ms, theImage.RawFormat);
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            theImage.Save(ms, ImageFormat.MemoryBmp);
+                        }
+                        catch
+                        {
+                            try
+                            {
+                                theImage.Save(ms, ImageFormat.Jpeg);
+                            }
+                            catch
+                            {
+                                try
+                                {
+                                    theImage.Save(ms, ImageFormat.Bmp);
+                                }
+                                catch
+                                {
+                                    try
+                                    {
+                                        theImage.Save(ms, ImageFormat.Gif);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        throw ex;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                ms.Seek(0, SeekOrigin.Begin);
+
+                var image = _doc.AddImage(ms);
+                var pic = image.CreatePicture();
+
+                //Calculate Horizontal and Vertical scale
+                float Hscale = ((float)96 / theImage.HorizontalResolution);
+                float Vscale = ((float)96 / theImage.VerticalResolution);
+
+                //Apply scale to height & width
+                pic.Height = (int)(theImage.Height / 2 * Hscale);
+                pic.Width = (int)(theImage.Width / 2 * Vscale);
+
+
+                //pic.SetPictureShape(BasicShapes.cube);
+                var picPara = para.AppendLine();
+                picPara.AppendPicture(pic);
+                //para.InsertParagraphAfterSelf(picPara);
+                //AddBlankLine();
+                //var picPara = AddBlankLine();
+               // picPara.InsertPicture(pic, 0);//.Pictures.Insert(0, pic);
+               
+
+            }
         }
-        public static void AddBlankLine()
+        public static Paragraph AddBlankLine()
         {
             var para = _doc.InsertParagraph();
             para.StyleName = "Normal";
+            return para;
         }
         public static void Save()
         {
@@ -133,5 +219,6 @@ namespace ExportPreso
                 return false;
             }
         }
+       
     }
 }

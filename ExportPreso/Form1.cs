@@ -31,6 +31,7 @@ namespace ExportPreso
         {
 
             lblMessage.Enabled = false;
+            lblMessage.Text = "Parsing..";
             var result = this.folderBrowser.ShowDialog(this);
             if (result != DialogResult.OK) return;
             var folderPath = FileIO.GetPath(folderBrowser.SelectedPath);
@@ -233,7 +234,7 @@ namespace ExportPreso
                 PowerPointEx.Close(PowerPoint_App);
                 AddImages();
 
-                AddPdfs(pdfs);
+                AddPdfs(pdfs, tempDir.FullName);
 
                 WordEx.Save();
 
@@ -245,15 +246,35 @@ namespace ExportPreso
                 MessageBox.Show(ex.Message);
             }
         }
-
-        private void AddPdfs(List<string> pdfs)
+        //private NumberWorker numWorker;
+        private AutoResetEvent _workerCompleted = new AutoResetEvent(false);
+        private void AddPdfs(List<string> pdfs,string tempDir)
         {
-            foreach(var pdf in pdfs)
-            {
-                PdfEx.ConvertToDoc(pdf);
-            }
+            BackgroundWorker worker = new BackgroundWorker();
+            worker.DoWork += (obj, e) => WorkerDoWork(pdfs, tempDir);
+            //worker.RunWorkerCompleted += worker_RunWorkerCompleted;
+            worker.RunWorkerAsync();
+            _workerCompleted.WaitOne();
         }
+        private void WorkerDoWork(List<string> pdfs, string tempDir)
+        {
+            foreach (var pdf in pdfs)
+            {
+                PdfEx.ConvertToDoc(pdf, tempDir);
+            }
+            _workerCompleted.Set();
+        }
+        ////add completion notification to backgroundWorker_RunWorkerCompleted
+        //void worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        //{
+        //    //if (Interlocked.Decrement(ref numWorkers) == 0)
+        //    //{
+        //    //    //update my UI
+        //    //}
 
+        //    //new code - notify about completion
+        //    _workerCompleted.Set();
+        //}
         private void AddImages()
         {
             if (_slideInfos.Count() == 0)
@@ -315,6 +336,8 @@ namespace ExportPreso
         {
             Process.Start("WINWORD.EXE", "\"" + _fullFilePath + "\"");
         }
+
+      
     }
 }
 

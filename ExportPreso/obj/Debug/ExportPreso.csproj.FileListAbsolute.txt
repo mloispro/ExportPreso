@@ -17,7 +17,6 @@ C:\Projects\ExportPreso\ExportPreso\bin\Debug\System.IO.Packaging.dll
 C:\Projects\ExportPreso\ExportPreso\bin\Debug\bcmail-jdk15-1.44.dll
 C:\Projects\ExportPreso\ExportPreso\bin\Debug\bcprov-jdk15-1.44.dll
 C:\Projects\ExportPreso\ExportPreso\bin\Debug\commons-logging.dll
-C:\Projects\ExportPreso\ExportPreso\bin\Debug\fontbox-1.8.2.dll
 C:\Projects\ExportPreso\ExportPreso\bin\Debug\icu4j-3.8.dll
 C:\Projects\ExportPreso\ExportPreso\bin\Debug\IKVM.OpenJDK.Beans.dll
 C:\Projects\ExportPreso\ExportPreso\bin\Debug\IKVM.OpenJDK.Charsets.dll
@@ -36,8 +35,17 @@ C:\Projects\ExportPreso\ExportPreso\bin\Debug\IKVM.OpenJDK.Util.dll
 C:\Projects\ExportPreso\ExportPreso\bin\Debug\IKVM.OpenJDK.XML.API.dll
 C:\Projects\ExportPreso\ExportPreso\bin\Debug\IKVM.Runtime.dll
 C:\Projects\ExportPreso\ExportPreso\bin\Debug\IKVM.Runtime.JNI.dll
-C:\Projects\ExportPreso\ExportPreso\bin\Debug\jempbox-1.8.2.dll
 C:\Projects\ExportPreso\ExportPreso\bin\Debug\junit.dll
-C:\Projects\ExportPreso\ExportPreso\bin\Debug\pdfbox-1.8.2.dll
+C:\Projects\ExportPreso\ExportPreso\bin\Debug\fontbox-1.8.9.dll
+C:\Projects\ExportPreso\ExportPreso\bin\Debug\ICSharpCode.SharpZipLib.dll
 C:\Projects\ExportPreso\ExportPreso\bin\Debug\IKVM.AWT.WinForms.dll
+C:\Projects\ExportPreso\ExportPreso\bin\Debug\IKVM.OpenJDK.Tools.dll
+C:\Projects\ExportPreso\ExportPreso\bin\Debug\IKVM.OpenJDK.XML.Bind.dll
+C:\Projects\ExportPreso\ExportPreso\bin\Debug\IKVM.OpenJDK.XML.Crypto.dll
+C:\Projects\ExportPreso\ExportPreso\bin\Debug\IKVM.OpenJDK.XML.Parse.dll
+C:\Projects\ExportPreso\ExportPreso\bin\Debug\IKVM.OpenJDK.XML.Transform.dll
+C:\Projects\ExportPreso\ExportPreso\bin\Debug\IKVM.OpenJDK.XML.WebServices.dll
+C:\Projects\ExportPreso\ExportPreso\bin\Debug\IKVM.OpenJDK.XML.XPath.dll
 C:\Projects\ExportPreso\ExportPreso\bin\Debug\IKVM.Reflection.dll
+C:\Projects\ExportPreso\ExportPreso\bin\Debug\jempbox-1.8.9.dll
+C:\Projects\ExportPreso\ExportPreso\bin\Debug\pdfbox-1.8.9.dll
